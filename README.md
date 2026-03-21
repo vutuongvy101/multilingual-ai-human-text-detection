@@ -18,6 +18,10 @@ A machine learning project for detecting AI-generated vs human-written text acro
 ```
 ├── data/                    # Datasets and raw data
 ├── docs/                    # Documentation
+│   ├── README.md          # Main documentation
+│   ├── api.md            # API reference
+│   ├── data.md           # Data collection details
+│   └── models.md         # Model architecture
 ├── models/                  # Trained model checkpoints
 ├── notebooks/              # Jupyter notebooks (POC and experiments)
 ├── scripts/                # Training and evaluation scripts
