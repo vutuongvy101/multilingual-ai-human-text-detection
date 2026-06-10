@@ -1,176 +1,201 @@
 # Multilingual AI-Human Text Detection
 
-A machine learning project for detecting AI-generated vs human-written text across multiple languages (English, Chinese, Vietnamese). This project implements both traditional statistical models and modern transformer-based approaches for binary classification of text authenticity.
+[![CI](https://github.com/vutuongvy101/multilingual-ai-human-text-detection/actions/workflows/ci.yml/badge.svg)](https://github.com/vutuongvy101/multilingual-ai-human-text-detection/actions/workflows/ci.yml)
+
+Binary classifier for detecting AI-generated vs human-written text across English, Chinese, and Vietnamese. Built as an **AI content forensics** research project: given a passage, estimate whether it was written by a person or produced by a language model — the same class of problem tackled by content-authenticity teams (e.g. Truuth).
+
+Implements TF-IDF statistical baselines (Logistic Regression, Naive Bayes) and fine-tuned transformers (DistilBERT, XLM-RoBERTa), with per-language evaluation to measure cross-lingual generalization.
 
 ## Features
 
-- **Multilingual Support**: Trained on English, Chinese, and Vietnamese datasets
-- **Multiple Model Architectures**:
-  - Statistical models (Logistic Regression, Naive Bayes) with n-gram features
-  - Transformer models (DistilBERT, XLM-RoBERTa)
-- **Data Pipeline**: Complete data collection, preprocessing, and generation pipeline
-- **Evaluation**: Comprehensive metrics and per-language analysis
-- **Inference API**: REST API for real-time text classification
-- **Web Demo**: Interactive web interface for testing the model
+- **Multilingual support**: English, Chinese, Vietnamese (300 QA pairs per language)
+- **Model architectures**: LogReg, Multinomial NB, DistilBERT, XLM-RoBERTa
+- **Data pipeline**: Collection, preprocessing, AI answer generation (Qwen2.5-1.5B-Instruct)
+- **Per-language evaluation**: Cross-lingual transfer analysis
+- **REST API**: FastAPI server for real-time classification
+- **Web demo**: Streamlit interface
+- **Test suite**: `pytest` coverage for core utilities
 
-## Project Structure
+## Results
 
-```
-├── data/                    # Datasets and raw data
-├── docs/                    # Documentation
-│   ├── README.md          # Main documentation
-│   ├── api.md            # API reference
-│   ├── data.md           # Data collection details
-│   └── models.md         # Model architecture
-├── models/                  # Trained model checkpoints
-├── notebooks/              # Jupyter notebooks (POC and experiments)
-├── scripts/                # Training and evaluation scripts
-├── src/                    # Source code
-│   ├── data/              # Data loading and preprocessing
-│   ├── models/            # Model definitions and architectures
-│   ├── training/          # Training pipelines
-│   ├── evaluation/        # Evaluation and metrics
-│   └── utils/             # Utilities and helpers
-├── tests/                  # Unit tests
-├── requirements.txt        # Python dependencies
-├── pyproject.toml         # Project configuration
-├── setup.py               # Package setup
-└── README.md
-```
+Test-set F1 by model and language (70/15/15 prompt-level split, seed=42). Statistical models use TF-IDF (1–2 grams, `min_df=2`, jieba segmentation for Chinese). Transformer results from fine-tuning with identical hyperparameters (`lr=2e-5`, `max_length=256`, 3 epochs). Full methodology in [`notebooks/48706094_assignment1.ipynb`](notebooks/48706094_assignment1.ipynb).
+
+| Model | EN | ZH | VI | Overall |
+|-------|-----|-----|-----|---------|
+| Logistic Regression | 0.9778 | 0.9545 | 1.0000 | **0.9776** |
+| Multinomial NB | 0.9318 | 0.8350 | 1.0000 | 0.9181 |
+| DistilBERT | 0.9773 | 0.7838 | 0.9091 | 0.8960 |
+| XLM-RoBERTa | 0.9890 | 0.9462 | 0.9783 | **0.9710** |
+
+![Logistic Regression confusion matrix](docs/images/confusion_matrix_logreg.png)
+
+### Findings
+
+**Chinese transfers worst for monolingual models.** DistilBERT drops to F1 0.7838 on ZH (vs 0.9773 on EN) because it is pre-trained on English only — Chinese characters are tokenised into meaningless subword fragments. Multinomial NB shows a similar pattern on ZH (0.8350), likely because n-gram features capture less discriminative signal across scripts without contextual embeddings.
+
+**XLM-RoBERTa generalises across all three languages** (F1 0.946–0.989 per language), confirming that multilingual pre-training is necessary for reliable cross-lingual AI-content detection.
+
+**Vietnamese is easiest in this corpus** for statistical models (F1 1.0000), possibly because the crawled Reddit answers and Qwen-generated responses are more stylistically distinct than the HC3-sourced EN/ZH pairs.
+
+### Known limitations
+
+- **Domain shift**: Models are trained on QA-style forum answers; performance on news articles, legal text, or social-media posts is untested and likely lower.
+- **Translation effects**: EN and ZH data come from HC3 (different sources and topics than the Vietnamese crawl); cross-language comparison mixes domain variation with language variation.
+- **Generator specificity**: AI labels come from a single model (Qwen2.5-1.5B-Instruct); detectors may not generalise to GPT-4, Claude, or other generators without retraining.
+- **Small test set**: 90 samples per language (270 total) — strong results should be confirmed with repeated runs and held-out domains.
 
 ## Quick Start
 
 ### Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/multilingual-ai-human-text-detection.git
+git clone https://github.com/vutuongvy101/multilingual-ai-human-text-detection.git
 cd multilingual-ai-human-text-detection
 
-# Install dependencies
 pip install -r requirements.txt
-
-# Or install as package
+# or
 pip install -e .
 ```
 
+### Data Setup
+
+Dataset JSONL files live in `data/`:
+
+```
+data/
+├── en_qa.jsonl
+├── zh_qa.jsonl
+└── vi_qa.jsonl
+```
+
+To regenerate them, use the notebooks in `notebooks/` (see [docs/data.md](docs/data.md)).
+
 ### Training
 
-```bash
-# Train statistical model
-python scripts/train_statistical.py
+Train a model before running transformer inference or pointing the API at a transformer checkpoint. A pre-trained statistical model is already included at `models/statistical/`.
 
-# Train transformer model
-python scripts/train_transformer.py --model xlm-roberta-base
+```bash
+# Statistical model (minutes, CPU-friendly)
+python scripts/train_statistical.py
+# Saves to models/statistical/
+
+# Transformer model (GPU recommended)
+python scripts/train_transformer.py --model-name xlm-roberta-base
+# Saves to models/transformer/
+```
+
+If training XLM-RoBERTa on Apple Silicon fails with an MPS out-of-memory error, reduce the per-step memory and keep a similar effective batch size with gradient accumulation:
+
+```bash
+python scripts/train_transformer.py \
+    --model-name xlm-roberta-base \
+    --batch-size 2 \
+    --eval-batch-size 2 \
+    --gradient-accumulation-steps 8 \
+    --max-length 256
 ```
 
 ### Demo
 
-Run the interactive demo to see the package in action:
-
 ```bash
-python demo.py
+python scripts/demo.py
 ```
 
-This will demonstrate:
-- Data loading from the multilingual dataset
-- Training a statistical model
-- Running inference with both model types
+Loads the multilingual dataset, trains a statistical model on the fly, and runs sample inference.
 
 ### Inference
 
 ```bash
-# Run inference on text
-python scripts/infer.py --text "Your text here" --model models/transformer --model-type transformer
+# Single text (uses bundled statistical model by default)
+python scripts/infer.py --text "Your text here" \
+    --model-path models/statistical --model-type statistical
 
-# Run on multiple texts from file
-python scripts/infer.py --text-file input.txt --output-file results.json
+# Transformer model (after training)
+python scripts/infer.py --text "Your text here" \
+    --model-path models/transformer --model-type transformer
+
+# Batch inference from file
+python scripts/infer.py --text-file input.txt --output-file results.json \
+    --model-path models/statistical --model-type statistical
 ```
 
 ### API Server
 
+The API loads a trained model on startup. The default is the bundled statistical model at `models/statistical/`. If no checkpoint is found, `/predict` returns `503 Model not loaded`.
+
 ```bash
-# Start the REST API
+# Start with default statistical model
 python scripts/serve_api.py
 
-# Example request
+# Or point to a fine-tuned transformer (after training)
+MODEL_PATH=models/transformer MODEL_TYPE=transformer python scripts/serve_api.py
+
+# Verify the model loaded
+curl http://localhost:8000/
+# {"model_loaded": true, "model_type": "statistical", ...}
+
+# Health check
+curl http://localhost:8000/health
+
+# Classify text
 curl -X POST "http://localhost:8000/predict" \
      -H "Content-Type: application/json" \
      -d '{"text": "Your text to classify"}'
 ```
 
-## Data
-
-The dataset consists of question-answer pairs from:
-- **English**: HC3 dataset (reddit_eli5 subset)
-- **Chinese**: HC3-Chinese dataset (open_qa subset)
-- **Vietnamese**: Custom crawled data from Vietnamese Reddit communities
-
-Each language has 300 QA pairs with both human-written and AI-generated answers (using Qwen2.5-1.5B-Instruct).
-
-## Models
-
-### Statistical Models
-- Feature extraction: TF-IDF with n-grams (1-2)
-- Classifiers: Logistic Regression, Multinomial Naive Bayes
-- Best F1: ~0.85 on multilingual test set
-
-### Transformer Models
-- **DistilBERT**: English-only baseline
-- **XLM-RoBERTa**: Multilingual model
-- Best F1: ~0.92 on multilingual test set
-
-## Evaluation
-
-The project provides comprehensive evaluation including:
-- Standard metrics: Accuracy, Precision, Recall, F1
-- Per-language breakdown
-- Confusion matrices
-- Error analysis
-- Model interpretability
-
-## Web Demo
-
-Launch the interactive web demo:
+### Web Demo
 
 ```bash
-python scripts/web_demo.py
+streamlit run scripts/web_demo.py
 ```
 
-Visit `http://localhost:8501` to test the model with your own text.
+Visit `http://localhost:8501`.
 
-## Development
+![Web demo screenshot](docs/images/web_demo.gif)
 
-### Running Tests
+### Tests
 
 ```bash
 pytest tests/
 ```
 
-### Code Quality
+## Data
 
-```bash
-# Format code
-black src/ tests/
+| Language | Source | Samples |
+|----------|--------|---------|
+| English | HC3 (`reddit_eli5`) | 300 QA pairs |
+| Chinese | HC3-Chinese (`open_qa`) | 300 QA pairs |
+| Vietnamese | Crawled from Vietnamese Reddit communities | 300 QA pairs |
 
-# Lint code
-flake8 src/ tests/
+Each pair has one human answer and one AI answer (Qwen2.5-1.5B-Instruct). See [docs/data.md](docs/data.md) for collection details.
 
-# Type checking
-mypy src/
+## Project Structure
+
+```
+├── data/                    # JSONL datasets (en/zh/vi_qa.jsonl)
+├── docs/                    # Documentation and result images
+├── models/                  # Trained checkpoints (statistical included)
+├── notebooks/               # Experiments and assignment notebook
+├── scripts/                 # Training, inference, API, and demos
+├── src/multilingual_ai_detection/
+├── tests/
+├── requirements.txt
+└── pyproject.toml
 ```
 
-### Contributing
+## Development
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
+```bash
+# Format
+black src/ tests/
+
+# Lint
+flake8 src/ tests/
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
 ## Citation
-
-If you use this work, please cite:
 
 ```bibtex
 @misc{vu2024multilingual,
@@ -178,16 +203,16 @@ If you use this work, please cite:
   author={Tuong Vy Vu},
   year={2024},
   publisher={GitHub},
-  url={https://github.com/yourusername/multilingual-ai-human-text-detection}
+  url={https://github.com/vutuongvy101/multilingual-ai-human-text-detection}
 }
 ```
 
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License — see [LICENSE](LICENSE).
 
 ## Contact
 
-Tuong Vy Vu - [Your contact information]
+Tuong Vy Vu — [LinkedIn](https://www.linkedin.com/in/tuong-vy-vu-260153177/)
 
-Project Link: [https://github.com/yourusername/multilingual-ai-human-text-detection](https://github.com/yourusername/multilingual-ai-human-text-detection)
+Project: [github.com/vutuongvy101/multilingual-ai-human-text-detection](https://github.com/vutuongvy101/multilingual-ai-human-text-detection)

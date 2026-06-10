@@ -5,11 +5,10 @@ import sys
 from pathlib import Path
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from multilingual_ai_detection.data import load_multilingual_dataset
 from multilingual_ai_detection.models import StatisticalClassifier, TransformerClassifier
-from multilingual_ai_detection.evaluation import evaluate_model
 
 
 def demo_data_loading():
@@ -37,7 +36,6 @@ def demo_statistical_model():
     train_texts = dataset["train"]["text"]
     train_labels = dataset["train"]["label"]
     test_texts = dataset["test"]["text"]
-    test_labels = dataset["test"]["label"]
 
     # Train model
     model = StatisticalClassifier(classifier="logistic", max_features=5000)
@@ -49,9 +47,11 @@ def demo_statistical_model():
 
     print("Sample predictions:")
     for i, (text, pred, prob) in enumerate(zip(test_texts[:5], predictions, probabilities)):
-        print(f"  {i+1}. {'Human' if pred == 0 else 'AI'} "
-              ".3f"
-              f"  Text: {text[:50]}...")
+        confidence = max(prob)
+        print(
+            f"  {i+1}. {'Human' if pred == 0 else 'AI'} "
+            f"(conf={confidence:.3f})  Text: {text[:50]}..."
+        )
 
 
 def demo_transformer_model():
@@ -66,7 +66,7 @@ def demo_transformer_model():
             # Test inference
             test_texts = [
                 "This is a human-written message about artificial intelligence.",
-                "The weather today is sunny and warm, perfect for outdoor activities."
+                "The weather today is sunny and warm, perfect for outdoor activities.",
             ]
 
             predictions = model.predict(test_texts)

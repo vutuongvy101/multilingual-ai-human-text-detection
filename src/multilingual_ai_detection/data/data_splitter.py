@@ -3,7 +3,7 @@
 import random
 from typing import List, Tuple
 
-from datasets import Dataset
+from datasets import Dataset, DatasetDict
 from .data_loader import stable_prompt_id
 
 

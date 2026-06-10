@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from multilingual_ai_detection.models import load_model
 
@@ -46,8 +46,8 @@ async def load_model_on_startup():
     """Load model on startup."""
     global model, model_type
 
-    model_path = os.getenv("MODEL_PATH", "models/transformer")
-    model_type_env = os.getenv("MODEL_TYPE", "transformer")
+    model_path = os.getenv("MODEL_PATH", "models/statistical")
+    model_type_env = os.getenv("MODEL_TYPE", "statistical")
 
     if not Path(model_path).exists():
         print(f"Warning: Model path {model_path} does not exist")
@@ -155,9 +155,4 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     host = os.getenv("HOST", "0.0.0.0")
 
-    uvicorn.run(
-        "serve_api:app",
-        host=host,
-        port=port,
-        reload=False
-    )
+    uvicorn.run(app, host=host, port=port, reload=False)

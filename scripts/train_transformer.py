@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from multilingual_ai_detection.data import load_multilingual_dataset
 from multilingual_ai_detection.training import train_transformer_model
@@ -41,8 +41,20 @@ def main():
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=16,
+        default=4,
         help="Training batch size"
+    )
+    parser.add_argument(
+        "--eval-batch-size",
+        type=int,
+        default=4,
+        help="Evaluation batch size"
+    )
+    parser.add_argument(
+        "--gradient-accumulation-steps",
+        type=int,
+        default=4,
+        help="Steps to accumulate gradients before each optimizer update"
     )
     parser.add_argument(
         "--learning-rate",
@@ -53,7 +65,7 @@ def main():
     parser.add_argument(
         "--max-length",
         type=int,
-        default=512,
+        default=256,
         help="Maximum sequence length"
     )
     parser.add_argument(
@@ -81,6 +93,8 @@ def main():
         output_dir=args.output_dir,
         num_train_epochs=args.num_epochs,
         per_device_train_batch_size=args.batch_size,
+        per_device_eval_batch_size=args.eval_batch_size,
+        gradient_accumulation_steps=args.gradient_accumulation_steps,
         learning_rate=args.learning_rate,
         max_length=args.max_length,
     )

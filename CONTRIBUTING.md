@@ -6,7 +6,7 @@ Thank you for your interest in contributing to this project! We welcome contribu
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/multilingual-ai-human-text-detection.git
+   git clone https://github.com/vutuongvy101/multilingual-ai-human-text-detection.git
    cd multilingual-ai-human-text-detection
    ```
 

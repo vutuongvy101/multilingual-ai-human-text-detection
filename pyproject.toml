@@ -7,7 +7,7 @@ name = "multilingual-ai-detection"
 version = "0.1.0"
 description = "Multilingual AI-Human Text Detection using ML and Transformers"
 authors = [
-    {name = "Tuong Vy Vu", email = "your.email@example.com"},
+    {name = "Tuong Vy Vu"},
 ]
 readme = "README.md"
 license = {text = "MIT"}
@@ -56,13 +56,6 @@ viz = [
     "seaborn>=0.12.0",
     "plotly>=5.15.0",
 ]
-
-[project.scripts]
-train-statistical = "multilingual_ai_detection.scripts.train_statistical:main"
-train-transformer = "multilingual_ai_detection.scripts.train_transformer:main"
-infer = "multilingual_ai_detection.scripts.infer:main"
-serve-api = "multilingual_ai_detection.scripts.serve_api:main"
-web-demo = "multilingual_ai_detection.scripts.web_demo:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

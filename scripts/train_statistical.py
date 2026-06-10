@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from multilingual_ai_detection.data import load_multilingual_dataset
 from multilingual_ai_detection.training import train_statistical_model

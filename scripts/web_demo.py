@@ -7,7 +7,7 @@ from pathlib import Path
 import streamlit as st
 
 # Add src to path
-sys.path.insert(0, str(Path(__file__).parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from multilingual_ai_detection.models import load_model
 
@@ -22,8 +22,8 @@ st.set_page_config(
 @st.cache_resource
 def load_trained_model():
     """Load the trained model."""
-    model_path = "models/transformer"  # Default path
-    model_type = "transformer"
+    model_path = "models/statistical"
+    model_type = "statistical"
 
     try:
         model = load_model(model_path, model_type)
@@ -98,7 +98,7 @@ def main():
 
                 # Confidence
                 confidence = max(prob) if isinstance(prob, list) else prob
-                st.metric("Confidence", ".1%")
+                st.metric("Confidence", f"{confidence:.1%}")
 
                 # Detailed probabilities
                 if return_probabilities:
@@ -107,7 +107,7 @@ def main():
                     if isinstance(prob, list):
                         prob_df = {
                             "Class": class_names,
-                            "Probability": [".1%" for p in prob]
+                            "Probability": [f"{p:.1%}" for p in prob]
                         }
 
                         # Highlight predicted class
@@ -116,7 +116,7 @@ def main():
 
                         st.table(prob_df)
                     else:
-                        st.info(".4f")
+                        st.info(f"Score: {prob:.4f}")
 
             except Exception as e:
                 st.error(f"Error during analysis: {e}")

@@ -27,7 +27,7 @@ def clean_text(text: str) -> str:
     # Remove email addresses
     text = re.sub(r'\S+@\S+', '', text)
 
-    return text
+    return text.strip()
 
 
 def extract_text_features(text: str) -> Dict[str, float]:

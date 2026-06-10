@@ -6,7 +6,7 @@ across multiple languages using both statistical and transformer-based models.
 
 __version__ = "0.1.0"
 __author__ = "Tuong Vy Vu"
-__email__ = "your.email@example.com"
+__email__ = "35751592+vutuongvy@users.noreply.github.com"
 
 from . import data
 from . import models

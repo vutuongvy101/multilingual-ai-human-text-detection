@@ -32,10 +32,15 @@ def tokenize_function(tokenizer, max_length: int = 512):
         return tokenizer(
             batch["text"],
             truncation=True,
-            padding=True,
-            max_length=max_length
+            padding=False,
+            max_length=max_length,
         )
     return tokenize
+
+
+def _columns_to_remove(dataset: Dataset) -> list:
+    """Return dataset columns to drop after tokenization, keeping labels."""
+    return [col for col in dataset.column_names if col != "label"]
 
 
 def train_transformer_model(
@@ -53,7 +58,9 @@ def train_transformer_model(
     warmup_steps: int = 500,
     logging_steps: int = 100,
     save_steps: int = 500,
-    evaluation_strategy: str = "steps",
+    gradient_accumulation_steps: int = 1,
+    dataloader_pin_memory: bool = False,
+    eval_strategy: str = "steps",
     save_strategy: str = "steps",
     load_best_model_at_end: bool = True,
     metric_for_best_model: str = "f1",
@@ -77,7 +84,9 @@ def train_transformer_model(
         warmup_steps: Warmup steps
         logging_steps: Logging frequency
         save_steps: Saving frequency
-        evaluation_strategy: Evaluation strategy
+        gradient_accumulation_steps: Number of steps to accumulate gradients
+        dataloader_pin_memory: Whether to pin memory in dataloaders
+        eval_strategy: Evaluation strategy
         save_strategy: Saving strategy
         load_best_model_at_end: Whether to load best model
         metric_for_best_model: Metric for best model
@@ -98,7 +107,7 @@ def train_transformer_model(
     tokenized_train = train_dataset.map(
         tokenize_function(model.tokenizer, max_length),
         batched=True,
-        remove_columns=train_dataset.column_names
+        remove_columns=_columns_to_remove(train_dataset),
     )
 
     tokenized_val = None
@@ -106,7 +115,7 @@ def train_transformer_model(
         tokenized_val = val_dataset.map(
             tokenize_function(model.tokenizer, max_length),
             batched=True,
-            remove_columns=val_dataset.column_names
+            remove_columns=_columns_to_remove(val_dataset),
         )
 
     # Data collator
@@ -123,7 +132,9 @@ def train_transformer_model(
         warmup_steps=warmup_steps,
         logging_steps=logging_steps,
         save_steps=save_steps,
-        evaluation_strategy=evaluation_strategy,
+        gradient_accumulation_steps=gradient_accumulation_steps,
+        dataloader_pin_memory=dataloader_pin_memory,
+        eval_strategy=eval_strategy,
         save_strategy=save_strategy,
         load_best_model_at_end=load_best_model_at_end,
         metric_for_best_model=metric_for_best_model,
