@@ -52,6 +52,9 @@ Test-set F1 by model and language (70/15/15 prompt-level split, seed=42). Statis
 git clone https://github.com/vutuongvy101/multilingual-ai-human-text-detection.git
 cd multilingual-ai-human-text-detection
 
+python -m venv .venv-multilingual-ai-detection
+source .venv-multilingual-ai-detection/bin/activate
+
 # Recommended: install the package with development, data, and visualisation extras
 pip install -e ".[dev,data,viz]"
 ```
