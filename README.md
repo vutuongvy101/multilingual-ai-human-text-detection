@@ -52,9 +52,8 @@ Test-set F1 by model and language (70/15/15 prompt-level split, seed=42). Statis
 git clone https://github.com/vutuongvy101/multilingual-ai-human-text-detection.git
 cd multilingual-ai-human-text-detection
 
-pip install -r requirements.txt
-# or
-pip install -e .
+# Recommended: install the package with development, data, and visualisation extras
+pip install -e ".[dev,data,viz]"
 ```
 
 ### Data Setup

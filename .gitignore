@@ -128,8 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Model checkpoints and data
-models/
+# Model checkpoints and data (root-level only; not src/.../models package)
+/models/
 data/*.pkl
 data/*.joblib
 *.h5
