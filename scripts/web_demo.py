@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 """Streamlit web demo for AI-human text detection."""
 
+import os
 import sys
 from pathlib import Path
+
+# Streamlit's file watcher can trip optional transformers image imports that
+# require torchvision, even though this demo only does text classification.
+os.environ.setdefault("STREAMLIT_SERVER_FILE_WATCHER_TYPE", "none")
 
 import streamlit as st
 
@@ -10,6 +15,19 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from multilingual_ai_detection.models import load_model
+
+MODEL_OPTIONS = {
+    "Local statistical model": {
+        "path": "models/statistical",
+        "type": "statistical",
+        "description": "Fast local TF-IDF + logistic regression model bundled with the project.",
+    },
+    "Hugging Face XLM-RoBERTa": {
+        "path": "bibbbu/multilingual-ai-human-detector_xlm-roberta-base",
+        "type": "transformer",
+        "description": "Fine-tuned multilingual transformer loaded from Hugging Face Hub.",
+    },
+}
 
 # Page config
 st.set_page_config(
@@ -20,11 +38,8 @@ st.set_page_config(
 
 # Load model (cache it)
 @st.cache_resource
-def load_trained_model():
-    """Load the trained model."""
-    model_path = "models/statistical"
-    model_type = "statistical"
-
+def load_trained_model(model_path: str, model_type: str):
+    """Load a trained model from a local path or Hub repo."""
     try:
         model = load_model(model_path, model_type)
         return model
@@ -39,12 +54,28 @@ def main():
     The model supports multiple languages including English, Chinese, and Vietnamese.
     """)
 
+    st.sidebar.header("Model Settings")
+    selected_model = st.sidebar.selectbox(
+        "Choose model",
+        options=list(MODEL_OPTIONS.keys()),
+        index=0,
+        help="Switch between the bundled local model and the hosted Hugging Face model.",
+    )
+    model_config = MODEL_OPTIONS[selected_model]
+    st.sidebar.caption(model_config["description"])
+    st.sidebar.code(
+        f"Type: {model_config['type']}\nPath: {model_config['path']}",
+        language="text",
+    )
+
     # Load model
-    model = load_trained_model()
+    model = load_trained_model(model_config["path"], model_config["type"])
 
     if model is None:
-        st.error("Model could not be loaded. Please check that the model files exist.")
+        st.error("Model could not be loaded. Please check the selected model path and dependencies.")
         return
+
+    st.info(f"Using `{selected_model}`")
 
     # Input section
     st.header("📝 Text Input")
@@ -129,18 +160,18 @@ def main():
 
     with st.expander("How it works"):
         st.markdown("""
-        This model uses transformer-based neural networks trained on a multilingual dataset
-        containing both human-written and AI-generated text. The model analyzes linguistic
-        patterns, writing style, and other features to make its classification.
+        The demo can run either a local statistical baseline or a transformer hosted on
+        Hugging Face. Both models were trained on a multilingual dataset containing both
+        human-written and AI-generated text.
 
         **Supported Languages:**
         - English
         - Chinese
         - Vietnamese
 
-        **Model Architecture:**
-        - XLM-RoBERTa for multilingual understanding
-        - Fine-tuned for binary classification
+        **Available Models:**
+        - Local statistical model: TF-IDF + logistic regression
+        - Hugging Face model: XLM-RoBERTa fine-tuned for binary classification
         """)
 
     with st.expander("Dataset Information"):

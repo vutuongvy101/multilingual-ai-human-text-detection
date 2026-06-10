@@ -1,16 +1,14 @@
 """Model definitions and loading utilities."""
 
 from pathlib import Path
-from typing import Union
 
 from .statistical import StatisticalClassifier
-from .transformer import TransformerClassifier
 
 
 def load_model(
     model_path: str,
     model_type: str,
-) -> Union[StatisticalClassifier, TransformerClassifier]:
+):
     """Load a trained model from disk.
 
     Args:
@@ -33,9 +31,20 @@ def load_model(
         return StatisticalClassifier.load_model(str(path))
 
     if model_type == "transformer":
+        from .transformer import TransformerClassifier
+
         return TransformerClassifier.load_model(model_path)
 
     raise ValueError(f"Unknown model type: {model_type}. Use 'statistical' or 'transformer'.")
+
+def __getattr__(name: str):
+    """Lazily expose transformer classes to avoid importing transformers unnecessarily."""
+    if name == "TransformerClassifier":
+        from .transformer import TransformerClassifier
+
+        globals()[name] = TransformerClassifier
+        return TransformerClassifier
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = ["StatisticalClassifier", "TransformerClassifier", "load_model"]

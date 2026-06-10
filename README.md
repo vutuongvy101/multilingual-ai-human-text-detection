@@ -46,6 +46,12 @@ Test-set F1 by model and language (70/15/15 prompt-level split, seed=42). Statis
 
 ## Quick Start
 
+### Hosted Transformer Model
+
+The fine-tuned multilingual XLM-RoBERTa checkpoint is also available on Hugging Face:
+
+- Model: [`bibbbu/multilingual-ai-human-detector_xlm-roberta-base`](https://huggingface.co/bibbbu/multilingual-ai-human-detector_xlm-roberta-base)
+
 ### Installation
 
 ```bash
@@ -74,7 +80,7 @@ To regenerate them, use the notebooks in `notebooks/` (see [docs/data.md](docs/d
 
 ### Training
 
-Train a model before running transformer inference or pointing the API at a transformer checkpoint. A pre-trained statistical model is already included at `models/statistical/`.
+Train a model before running transformer inference or pointing the API at a local transformer checkpoint. A pre-trained statistical model is already included at `models/statistical/`. If you want a hosted transformer instead, the Streamlit demo can load `bibbbu/multilingual-ai-human-detector_xlm-roberta-base` directly from Hugging Face Hub.
 
 ```bash
 # Statistical model (minutes, CPU-friendly)
@@ -152,6 +158,11 @@ streamlit run scripts/web_demo.py
 ```
 
 Visit `http://localhost:8501`.
+
+The web app lets you choose between:
+
+- the bundled local statistical baseline at `models/statistical`
+- the hosted Hugging Face transformer `bibbbu/multilingual-ai-human-detector_xlm-roberta-base`
 
 ![Web demo screenshot](docs/images/web_demo.gif)
 
